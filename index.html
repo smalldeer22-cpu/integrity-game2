@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>廉政翻翻樂 - 誠信英雄挑戰賽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            touch-action: manipulation;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 1024px) {
+            .main-container { flex-direction: row; align-items: flex-start; }
+        }
+
+        /* 卡片樣式 */
+        .card { perspective: 1000px; aspect-ratio: 3 / 4; }
+        .card-inner {
+            position: relative; width: 100%; height: 100%;
+            text-align: center; transition: transform 0.6s;
+            transform-style: preserve-3d; cursor: pointer;
+        }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-front { background-color: #3b82f6; color: white; border: 3px solid #fff; font-size: 2rem; }
+        .card-back {
+            background-color: white; color: #1e3a8a; transform: rotateY(180deg);
+            border: 3px solid #3b82f6; font-size: 0.7rem; font-weight: 700;
+            line-height: 1.4; text-align: center; overflow: hidden;
+        }
+        .matched .card-back { background-color: #dcfce7; border-color: #22c55e; color: #14532d; }
+
+        /* 左側清單 */
+        .hint-item {
+            border-left: 4px solid #3b82f6; background-color: #f8fafc;
+            padding: 8px 12px; border-radius: 4px; margin-bottom: 6px;
+        }
+
+        /* 排行榜捲軸 */
+        #leaderboard-list::-webkit-scrollbar { width: 6px; }
+        #leaderboard-list::-webkit-scrollbar-track { background: #f1f5f9; }
+        #leaderboard-list::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .match-anim { animation: pulse 0.5s ease-in-out; }
+
+        .progress-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="p-4 flex flex-col items-center">
+
+    <!-- 頂部資訊欄 -->
+    <div id="game-header" class="w-full max-w-2xl text-center mb-6">
+        <h1 class="text-3xl font-black text-blue-900 mb-2 tracking-tighter">🛡️ 廉政宣導翻翻樂</h1>
+        <div class="flex justify-around items-center bg-white/80 backdrop-blur rounded-2xl py-3 shadow-sm border border-blue-100">
+            <div class="text-center px-4">
+                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">任務進度</p>
+                <div class="w-32 sm:w-40 bg-gray-200 rounded-full h-4 border border-blue-50 overflow-hidden relative">
+                    <div id="progress-bar" class="progress-fill bg-green-500 h-full w-0"></div>
+                    <div id="progress-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-blue-900">0 / 6</div>
+                </div>
+            </div>
+            <div class="text-center border-l border-gray-100 pl-8 pr-4">
+                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">挑戰時間</p>
+                <p id="timer-display" class="text-xl font-black text-red-600 leading-none">0s</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- 左側：9 點宣導清單 -->
+        <div class="w-full lg:w-1/3 bg-white/95 rounded-2xl p-5 shadow-lg border border-blue-100">
+            <h3 class="font-black text-blue-800 text-lg border-b-2 border-blue-500 mb-4 pb-2 flex items-center gap-2">
+                <span>📖</span> 宣導要點參考
+            </h3>
+            <div id="hint-list" class="space-y-2 text-xs text-gray-700 font-bold">
+                <!-- JS 動態生成 -->
+            </div>
+        </div>
+
+        <!-- 右側：4x3 遊戲板 -->
+        <div id="game-board" class="grid grid-cols-4 gap-2 w-full lg:w-2/3">
+            <!-- JS 動態生成 -->
+        </div>
+    </div>
+
+    <!-- 蓋板彈窗 -->
+    <div id="modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl overflow-y-auto max-h-[90vh]">
+            
+            <!-- 開始畫面 -->
+            <div id="start-view">
+                <div class="text-6xl mb-6">⚖️</div>
+                <h2 class="text-2xl font-black text-blue-900 mb-2">誠信英雄大挑戰</h2>
+                <p class="text-gray-600 mb-8 font-bold text-sm leading-relaxed">
+                    找出 4x3 陣列中完全相同的句子，<br>
+                    挑戰全台最速完成排名！
+                </p>
+                <button id="start-btn" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg">
+                    開始挑戰
+                </button>
+                <p class="mt-4 text-[10px] text-gray-400 font-bold">臺南市山上區公所政風室</p>
+            </div>
+
+            <!-- 結算畫面 -->
+            <div id="end-view" class="hidden">
+                <div class="text-4xl mb-2">🎉</div>
+                <h2 class="text-2xl font-black text-blue-800 mb-1">挑戰完成！</h2>
+                <p id="final-time-text" class="text-blue-600 font-black text-xl mb-6 tracking-tighter"></p>
+                
+                <div id="upload-form" class="mb-6 bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                    <p class="text-xs font-black text-blue-800 mb-3">🏆 登錄誠信英雄排行榜</p>
+                    <input type="text" id="nickname" maxlength="8" placeholder="請輸入暱稱 (8字內)" 
+                           class="w-full px-4 py-3 rounded-xl border border-blue-200 text-center font-bold focus:ring-2 focus:ring-blue-400 outline-none mb-3 bg-white">
+                    <button id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black shadow-md active:translate-y-1 transition-all">
+                        確認並上傳成績
+                    </button>
+                    <div id="submit-error" class="text-red-500 text-[10px] mt-2 font-bold h-4"></div>
+                </div>
+
+                <div id="rank-display" class="hidden">
+                    <div class="text-blue-700 font-black text-xl mb-4 italic underline underline-offset-4">
+                        全台總排名：第 <span id="user-rank">?</span> 名
+                    </div>
+                    <div id="leaderboard-list" class="text-left bg-gray-50 rounded-xl p-3 h-[250px] overflow-y-auto border border-gray-100 text-sm mb-6">
+                        <!-- 由 JS 捉取 GAS 資料生成 -->
+                    </div>
+                </div>
+
+                <button id="restart-btn" class="w-full bg-gray-800 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
+                    再挑戰一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 【重要】請將 Google Apps Script 部署後的網址填入下方引號內
+        // ==========================================
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyXz5QTd5K5EMPcZ5UDZfTIHTIe1WCr_ZT0eyWNOeyrvNVKQ8wt911bmIdlk368e7A/exec"; 
+
+        const allSlogans = [
+            "對公務員最好的禮物是稱讚，而不是送禮",
+            "行賄收賄都有罪，切勿以身試法",
+            "檢警監管帳戶及ATM解除分期付款都是騙",
+            "反詐騙專線165，多問、多查、多確認",
+            "勿點來路不明簡訊，避免個資密碼外洩",
+            "使用公用Wi-Fi後，要記得登出，避免駭客入侵",
+            "法律為守護公益，已禁止機關對揭弊者的不利措施",
+            "賄選檢舉專線：0800-024-099撥通後再按4",
+            "選舉時，買票賣票都有罪"
+        ];
+
+        let flippedCards = [];
+        let matchedCount = 0;
+        let gameActive = false;
+        let startTime, timerInterval, lastSeconds = 0;
+
+        const board = document.getElementById('game-board');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const timerDisplay = document.getElementById('timer-display');
+        const modal = document.getElementById('modal');
+        const startView = document.getElementById('start-view');
+        const endView = document.getElementById('end-view');
+        const nicknameInput = document.getElementById('nickname');
+        const submitError = document.getElementById('submit-error');
+
+        function initHints() {
+            document.getElementById('hint-list').innerHTML = allSlogans.map((s, i) => `
+                <div class="hint-item"><span class="text-blue-600 mr-1">${i+1}.</span>${s}</div>
+            `).join('');
+        }
+
+        function updateProgress() {
+            const percentage = (matchedCount / 6) * 100;
+            progressBar.style.width = `${percentage}%`;
+            if (matchedCount === 6) {
+                progressText.innerHTML = '<span class="text-sm">✅</span>';
+                progressBar.classList.replace('bg-green-500', 'bg-green-600');
+            } else {
+                progressText.innerText = `${matchedCount} / 6`;
+                progressBar.classList.replace('bg-green-600', 'bg-green-500');
+            }
+        }
+
+        function initGame() {
+            board.innerHTML = '';
+            initHints();
+            const selected = [...allSlogans].sort(() => Math.random() - 0.5).slice(0, 6);
+            const deck = [];
+            selected.forEach(s => { deck.push(s); deck.push(s); });
+            deck.sort(() => Math.random() - 0.5);
+
+            deck.forEach(text => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-inner" onclick="flipCard(this)" data-text="${text}">
+                        <div class="card-front">🛡️</div>
+                        <div class="card-back">${text}</div>
+                    </div>
+                `;
+                board.appendChild(card);
+            });
+
+            matchedCount = 0;
+            updateProgress();
+            timerDisplay.innerText = `0s`;
+            flippedCards = [];
+            document.getElementById('upload-form').classList.remove('hidden');
+            document.getElementById('rank-display').classList.add('hidden');
+        }
+
+        function flipCard(inner) {
+            if (!gameActive || flippedCards.length >= 2 || inner.parentElement.classList.contains('flipped') || inner.parentElement.classList.contains('matched')) return;
+            inner.parentElement.classList.add('flipped');
+            flippedCards.push(inner);
+            if (flippedCards.length === 2) checkMatch();
+        }
+
+        function checkMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.dataset.text === c2.dataset.text) {
+                matchedCount++;
+                c1.parentElement.classList.add('matched', 'match-anim');
+                c2.parentElement.classList.add('matched', 'match-anim');
+                updateProgress();
+                flippedCards = [];
+                if (matchedCount === 6) endGame();
+            } else {
+                setTimeout(() => {
+                    c1.parentElement.classList.remove('flipped');
+                    c2.parentElement.classList.remove('flipped');
+                    flippedCards = [];
+                }, 800);
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            lastSeconds = Math.floor((Date.now() - startTime) / 1000);
+            setTimeout(() => {
+                startView.classList.add('hidden');
+                endView.classList.remove('hidden');
+                modal.classList.remove('hidden');
+                document.getElementById('final-time-text').innerText = `您的成績：${lastSeconds} 秒`;
+            }, 600);
+        }
+
+        // --- 排行榜連線邏輯 ---
+        document.getElementById('submit-btn').onclick = async () => {
+            const name = nicknameInput.value.trim();
+            if (!name) { submitError.innerText = "請輸入暱稱"; return; }
+            if (!scriptURL) { submitError.innerText = "尚未設定 GAS 後端網址"; return; }
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true; btn.innerText = "連線資料庫中...";
+            submitError.innerText = "";
+
+            try {
+                // 1. 檢查暱稱是否重複 (GET)
+                const checkRes = await fetch(`${scriptURL}?score=0&t=${Date.now()}`);
+                const checkData = await checkRes.json();
+                const names = (checkData.allNames || []).map(n => n.toString().toLowerCase());
+                if (names.includes(name.toLowerCase())) {
+                    submitError.innerText = "此暱稱已被挑戰者使用，請換一個";
+                    btn.disabled = false; btn.innerText = "確認並上傳成績";
+                    return;
+                }
+
+                // 2. 上傳成績 (POST)
+                await fetch(scriptURL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `name=${encodeURIComponent(name)}&score=${lastSeconds}`
+                });
+
+                // 3. 延遲一下捉取最新排行榜 (GET)
+                setTimeout(async () => {
+                    const finalRes = await fetch(`${scriptURL}?score=${lastSeconds}&t=${Date.now()}`);
+                    const data = await finalRes.json();
+                    
+                    document.getElementById('upload-form').classList.add('hidden');
+                    document.getElementById('rank-display').classList.remove('hidden');
+                    document.getElementById('user-rank').innerText = data.userRank;
+
+                    const list = document.getElementById('leaderboard-list');
+                    let displayRank = 1;
+                    list.innerHTML = data.topList.map((e, idx) => {
+                        // 秒數越小排名越前
+                        if (idx > 0 && e.score > data.topList[idx-1].score) displayRank = idx + 1;
+                        return `
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100 ${e.name == name ? 'bg-yellow-100 font-bold px-2 rounded' : ''}">
+                                <span>${idx + 1}. ${e.name}</span>
+                                <span class="text-blue-600 font-black">${e.score}s</span>
+                            </div>
+                        `;
+                    }).join('');
+                }, 1000);
+
+            } catch (e) {
+                submitError.innerText = "連線失敗，請檢查網路";
+                btn.disabled = false; btn.innerText = "重新送出";
+            }
+        };
+
+        document.getElementById('start-btn').onclick = () => {
+            modal.classList.add('hidden');
+            initGame();
+            gameActive = true;
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                timerDisplay.innerText = `${Math.floor((Date.now() - startTime) / 1000)}s`;
+            }, 1000);
+        };
+
+        document.getElementById('restart-btn').onclick = () => {
+            startView.classList.remove('hidden');
+            endView.classList.add('hidden');
+            nicknameInput.value = '';
+        };
+
+    </script>
+</body>
+</html>
