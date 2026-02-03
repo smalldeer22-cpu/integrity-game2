@@ -31,7 +31,7 @@
             .main-container { flex-direction: row; align-items: flex-start; }
         }
 
-        /* 核心卡牌容器：固定大小避免位移 */
+        /* 核心卡牌容器 */
         .card { 
             perspective: 1000px; 
             aspect-ratio: 3 / 4; 
@@ -47,7 +47,6 @@
             cursor: pointer;
         }
 
-        /* 翻轉狀態與匹配狀態固定 */
         .card.flipped .card-inner,
         .card.matched .card-inner { 
             transform: rotateY(180deg); 
@@ -55,7 +54,7 @@
 
         .card-front, .card-back {
             position: absolute;
-            inset: 0; /* 撐滿父容器 */
+            inset: 0;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
@@ -68,7 +67,7 @@
             border: 3px solid #fff;
         }
         
-        /* 卡片正面：蓋起來時顯示您提供的背景圖 */
+        /* 卡片正面：蓋起來時顯示背景圖 */
         .card-front { 
             background-color: #e5e7eb;
             background-image: url('bg.jpg'); 
@@ -92,7 +91,6 @@
             border-color: #3b82f6;
         }
 
-        /* 答對後的樣式：維持在原位，顏色變淡綠色 */
         .card.matched .card-back { 
             background-color: #dcfce7; 
             border-color: #22c55e; 
@@ -104,11 +102,6 @@
             border-left: 4px solid #3b82f6; background-color: #f8fafc;
             padding: 8px 12px; border-radius: 4px; margin-bottom: 6px;
         }
-
-        /* 排行榜捲軸 */
-        #leaderboard-list::-webkit-scrollbar { width: 6px; }
-        #leaderboard-list::-webkit-scrollbar-track { background: #f1f5f9; }
-        #leaderboard-list::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
 
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .match-anim { animation: pulse 0.5s ease-in-out; }
@@ -153,7 +146,7 @@
         </div>
     </div>
 
-    <!-- 蓋板彈窗 (包含開始與結算) -->
+    <!-- 蓋板彈窗 -->
     <div id="modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl overflow-y-auto max-h-[90vh]">
             
@@ -165,7 +158,7 @@
                 <h2 class="text-2xl font-black text-blue-900 mb-2">誠信英雄大挑戰</h2>
                 <p class="text-gray-600 mb-8 font-bold text-sm leading-relaxed">
                     找出 4x3 陣列中完全相同的句子，<br>
-                    挑戰全台最速完成排名！
+                    學習廉政知識領取獎勵！
                 </p>
                 <button id="start-btn" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg">
                     開始挑戰
@@ -179,26 +172,12 @@
                 <h2 class="text-2xl font-black text-blue-800 mb-1">挑戰完成！</h2>
                 <p id="final-time-text" class="text-blue-600 font-black text-xl mb-6 tracking-tighter"></p>
                 
-                <div id="upload-form" class="mb-6 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                    <p class="text-xs font-black text-blue-800 mb-3">🏆 登錄誠信英雄排行榜</p>
-                    <input type="text" id="nickname" maxlength="8" placeholder="請輸入暱稱 (8字內)" 
-                           class="w-full px-4 py-3 rounded-xl border border-blue-200 text-center font-bold focus:ring-2 focus:ring-blue-400 outline-none mb-3 bg-white">
-                    <button id="submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black shadow-md active:translate-y-1 transition-all">
-                        確認並上傳成績
-                    </button>
-                    <div id="submit-error" class="text-red-500 text-[10px] mt-2 font-bold h-4"></div>
+                <div class="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p class="text-blue-800 font-bold mb-2 text-lg">恭喜過關！</p>
+                    <p class="text-gray-600 text-sm">您對廉政法規已有充分認識，<br>請向工作人員出示此畫面兌換小禮物。</p>
                 </div>
 
-                <div id="rank-display" class="hidden">
-                    <div class="text-blue-700 font-black text-xl mb-4 italic underline underline-offset-4">
-                        全台總排名：第 <span id="user-rank">?</span> 名
-                    </div>
-                    <div id="leaderboard-list" class="text-left bg-gray-50 rounded-xl p-3 h-[250px] overflow-y-auto border border-gray-100 text-sm mb-6">
-                        <!-- 排行清單 -->
-                    </div>
-                </div>
-
-                <button id="restart-btn" class="w-full bg-gray-800 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
+                <button id="restart-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg">
                     再挑戰一次
                 </button>
             </div>
@@ -206,9 +185,6 @@
     </div>
 
     <script>
-        // 設定 GAS 網址
-        const scriptURL = "https://script.google.com/macros/s/AKfycbyXz5QTd5K5EMPcZ5UDZfTIHTIe1WCr_ZT0eyWNOeyrvNVKQ8wt911bmIdlk368e7A/exec"; 
-
         const allSlogans = [
             "對公務員最好的禮物是稱讚，而不是送禮",
             "行賄收賄都有罪，切勿以身試法",
@@ -224,7 +200,7 @@
         let flippedCards = [];
         let matchedCount = 0;
         let gameActive = false;
-        let startTime, timerInterval, lastSeconds = 0;
+        let startTime, timerInterval;
 
         const board = document.getElementById('game-board');
         const progressBar = document.getElementById('progress-bar');
@@ -233,8 +209,6 @@
         const modal = document.getElementById('modal');
         const startView = document.getElementById('start-view');
         const endView = document.getElementById('end-view');
-        const nicknameInput = document.getElementById('nickname');
-        const submitError = document.getElementById('submit-error');
 
         function initHints() {
             document.getElementById('hint-list').innerHTML = allSlogans.map((s, i) => `
@@ -278,8 +252,6 @@
             updateProgress();
             timerDisplay.innerText = `0s`;
             flippedCards = [];
-            document.getElementById('upload-form').classList.remove('hidden');
-            document.getElementById('rank-display').classList.add('hidden');
         }
 
         function flipCard(inner) {
@@ -316,7 +288,7 @@
         function endGame() {
             gameActive = false;
             clearInterval(timerInterval);
-            lastSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const lastSeconds = Math.floor((Date.now() - startTime) / 1000);
             setTimeout(() => {
                 startView.classList.add('hidden');
                 endView.classList.remove('hidden');
@@ -324,37 +296,6 @@
                 document.getElementById('final-time-text').innerText = `您的成績：${lastSeconds} 秒`;
             }, 600);
         }
-
-        document.getElementById('submit-btn').onclick = async () => {
-            const name = nicknameInput.value.trim();
-            if (!name) { submitError.innerText = "請輸入暱稱"; return; }
-            const btn = document.getElementById('submit-btn');
-            btn.disabled = true; btn.innerText = "連線中...";
-            submitError.innerText = "";
-
-            try {
-                const fullURL = `${scriptURL}?name=${encodeURIComponent(name)}&score=${lastSeconds}&t=${Date.now()}`;
-                const response = await fetch(fullURL);
-                const data = await response.json();
-                
-                document.getElementById('upload-form').classList.add('hidden');
-                document.getElementById('rank-display').classList.remove('hidden');
-                document.getElementById('user-rank').innerText = data.userRank || "?";
-
-                const list = document.getElementById('leaderboard-list');
-                list.innerHTML = (data.topList || []).map((e, idx) => `
-                    <div class="flex justify-between items-center py-2 border-b border-gray-100 ${e.name == name && parseInt(e.score) == lastSeconds ? 'bg-yellow-100 font-bold px-2 rounded-lg' : ''}">
-                        <span>${idx + 1}. ${e.name}</span>
-                        <span class="text-blue-600 font-black">${e.score}s</span>
-                    </div>
-                `).join('');
-
-            } catch (e) {
-                console.error(e);
-                submitError.innerText = "連線超時，請檢查網路後重試";
-                btn.disabled = false; btn.innerText = "重新送出";
-            }
-        };
 
         document.getElementById('start-btn').onclick = () => {
             modal.classList.add('hidden');
@@ -369,8 +310,12 @@
         document.getElementById('restart-btn').onclick = () => {
             startView.classList.remove('hidden');
             endView.classList.add('hidden');
-            nicknameInput.value = '';
             initGame();
+            gameActive = true;
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                timerDisplay.innerText = `${Math.floor((Date.now() - startTime) / 1000)}s`;
+            }, 1000);
         };
 
         // 預載圖片檢查
