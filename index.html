@@ -113,7 +113,8 @@
 
     <!-- 頂部資訊欄 -->
     <div id="game-header" class="w-full max-w-2xl text-center mb-6">
-        <h1 class="text-3xl font-black text-blue-900 mb-2 tracking-tighter">🛡️ 廉政宣導翻翻樂</h1>
+        <!-- 已移除圖示並修改標題文字 -->
+        <h1 class="text-3xl font-black text-blue-900 mb-2 tracking-tighter">廉政卡牌翻翻樂</h1>
         <div class="flex justify-around items-center bg-white/80 backdrop-blur rounded-2xl py-3 shadow-sm border border-blue-100">
             <div class="text-center px-4">
                 <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">任務進度</p>
@@ -129,9 +130,15 @@
         </div>
     </div>
 
+    <!-- 容器 -->
     <div class="main-container">
-        <!-- 左側：9 點宣導清單 -->
-        <div class="w-full lg:w-1/3 bg-white/95 rounded-2xl p-5 shadow-lg border border-blue-100">
+        <!-- 4x3 遊戲板 -->
+        <div id="game-board" class="grid grid-cols-4 gap-2 w-full lg:w-2/3 order-1 lg:order-2">
+            <!-- JS 動態生成 -->
+        </div>
+
+        <!-- 9 點宣導清單 -->
+        <div class="w-full lg:w-1/3 bg-white/95 rounded-2xl p-5 shadow-lg border border-blue-100 order-2 lg:order-1">
             <h3 class="font-black text-blue-800 text-lg border-b-2 border-blue-500 mb-4 pb-2 flex items-center gap-2">
                 <span>📖</span> 宣導要點參考
             </h3>
@@ -139,28 +146,22 @@
                 <!-- JS 動態生成 -->
             </div>
         </div>
-
-        <!-- 右側：4x3 遊戲板 -->
-        <div id="game-board" class="grid grid-cols-4 gap-2 w-full lg:w-2/3">
-            <!-- JS 動態生成 -->
-        </div>
     </div>
 
-    <!-- 蓋板彈窗 -->
+    <!-- 蓋板彈窗 (包含開始與結算) -->
     <div id="modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl overflow-y-auto max-h-[90vh]">
             
             <!-- 開始畫面 -->
             <div id="start-view">
-                <div class="w-32 h-44 mx-auto mb-6 rounded-lg shadow-md border-4 border-white overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <img id="preview-img" src="bg.jpg" alt="卡牌封面" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150x200?text=山上區公所'">
+                <!-- 放大封面圖 -->
+                <div class="w-60 h-84 mx-auto mb-6 rounded-xl shadow-2xl border-4 border-white overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <img id="preview-img" src="bg.jpg" alt="卡牌封面" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/200x280?text=山上區公所'">
                 </div>
-                <h2 class="text-2xl font-black text-blue-900 mb-2">誠信英雄大挑戰</h2>
-                <p class="text-gray-600 mb-8 font-bold text-sm leading-relaxed">
-                    找出 4x3 陣列中完全相同的句子，<br>
-                    學習廉政知識領取獎勵！
-                </p>
-                <button id="start-btn" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-lg">
+                <!-- 標題 -->
+                <h2 class="text-3xl font-black text-blue-900 mb-8 tracking-tight">廉政卡牌翻翻樂</h2>
+                
+                <button id="start-btn" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-xl">
                     開始挑戰
                 </button>
                 <p class="mt-4 text-[10px] text-gray-400 font-bold">臺南市山上區公所政風室</p>
@@ -318,7 +319,7 @@
             }, 1000);
         };
 
-        // 預載圖片檢查
+        // 預載圖片
         new Image().src = 'bg.jpg';
     </script>
 </body>
