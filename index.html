@@ -31,47 +31,73 @@
             .main-container { flex-direction: row; align-items: flex-start; }
         }
 
-        /* 卡片樣式 */
-        .card { perspective: 1000px; aspect-ratio: 3 / 4; }
-        .card-inner {
-            position: relative; width: 100%; height: 100%;
-            text-align: center; transition: transform 0.6s;
-            transform-style: preserve-3d; cursor: pointer;
-        }
-        .card.flipped .card-inner { transform: rotateY(180deg); }
-        .card-front, .card-back {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            padding: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        /* 核心卡牌容器：固定大小避免位移 */
+        .card { 
+            perspective: 1000px; 
+            aspect-ratio: 3 / 4; 
+            position: relative;
         }
         
-        /* 卡片正面 (蓋起來時的圖案 - 優化路徑與顯示) */
+        .card-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        /* 翻轉狀態與匹配狀態固定 */
+        .card.flipped .card-inner,
+        .card.matched .card-inner { 
+            transform: rotateY(180deg); 
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            inset: 0; /* 撐滿父容器 */
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            border: 3px solid #fff;
+        }
+        
+        /* 卡片正面：蓋起來時顯示您提供的背景圖 */
         .card-front { 
             background-color: #e5e7eb;
-            /* 修正路徑寫法，移除點號增加相容性 */
             background-image: url('bg.jpg'); 
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            border: 3px solid #fff;
-            position: relative;
-        }
-        
-        /* 若圖片載入中或失敗的遮罩 */
-        .card-front::after {
-            content: "🛡️";
-            font-size: 2rem;
-            color: rgba(255,255,255,0.3);
-            display: var(--show-icon, block);
+            z-index: 2;
         }
 
+        /* 卡片背面：翻開後顯示文字 */
         .card-back {
-            background-color: white; color: #1e3a8a; transform: rotateY(180deg);
-            border: 3px solid #3b82f6; font-size: 0.75rem; font-weight: 700;
-            line-height: 1.4; text-align: center; overflow: hidden;
+            background-color: white; 
+            color: #1e3a8a; 
+            transform: rotateY(180deg);
+            z-index: 1;
+            font-size: 0.75rem; 
+            font-weight: 700;
+            line-height: 1.4; 
+            text-align: center;
+            overflow: hidden;
+            border-color: #3b82f6;
         }
-        .matched .card-back { background-color: #dcfce7; border-color: #22c55e; color: #14532d; }
+
+        /* 答對後的樣式：維持在原位，顏色變淡綠色 */
+        .card.matched .card-back { 
+            background-color: #dcfce7; 
+            border-color: #22c55e; 
+            color: #14532d; 
+        }
 
         /* 左側清單 */
         .hint-item {
@@ -180,7 +206,7 @@
     </div>
 
     <script>
-        // 請確保此處網址是「最新部署」的網頁應用程式網址
+        // 設定 GAS 網址
         const scriptURL = "https://script.google.com/macros/s/AKfycbyXz5QTd5K5EMPcZ5UDZfTIHTIe1WCr_ZT0eyWNOeyrvNVKQ8wt911bmIdlk368e7A/exec"; 
 
         const allSlogans = [
@@ -237,15 +263,15 @@
             deck.sort(() => Math.random() - 0.5);
 
             deck.forEach(text => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'card';
+                cardContainer.innerHTML = `
                     <div class="card-inner" onclick="flipCard(this)" data-text="${text}">
                         <div class="card-front" style="--show-icon: none;"></div>
                         <div class="card-back">${text}</div>
                     </div>
                 `;
-                board.appendChild(card);
+                board.appendChild(cardContainer);
             });
 
             matchedCount = 0;
@@ -257,9 +283,13 @@
         }
 
         function flipCard(inner) {
-            if (!gameActive || flippedCards.length >= 2 || inner.parentElement.classList.contains('flipped') || inner.parentElement.classList.contains('matched')) return;
-            inner.parentElement.classList.add('flipped');
+            if (!gameActive || flippedCards.length >= 2) return;
+            const parent = inner.parentElement;
+            if (parent.classList.contains('flipped') || parent.classList.contains('matched')) return;
+
+            parent.classList.add('flipped');
             flippedCards.push(inner);
+
             if (flippedCards.length === 2) checkMatch();
         }
 
@@ -267,8 +297,10 @@
             const [c1, c2] = flippedCards;
             if (c1.dataset.text === c2.dataset.text) {
                 matchedCount++;
-                c1.parentElement.classList.add('matched', 'match-anim');
-                c2.parentElement.classList.add('matched', 'match-anim');
+                c1.parentElement.classList.replace('flipped', 'matched');
+                c2.parentElement.classList.replace('flipped', 'matched');
+                c1.parentElement.classList.add('match-anim');
+                c2.parentElement.classList.add('match-anim');
                 updateProgress();
                 flippedCards = [];
                 if (matchedCount === 6) endGame();
@@ -296,41 +328,30 @@
         document.getElementById('submit-btn').onclick = async () => {
             const name = nicknameInput.value.trim();
             if (!name) { submitError.innerText = "請輸入暱稱"; return; }
-            if (!scriptURL) { submitError.innerText = "尚未設定 GAS 後端網址"; return; }
-
             const btn = document.getElementById('submit-btn');
-            btn.disabled = true; btn.innerText = "上傳並計算排名...";
+            btn.disabled = true; btn.innerText = "連線中...";
             submitError.innerText = "";
 
             try {
-                // 發送上傳請求並獲取回傳資料
                 const fullURL = `${scriptURL}?name=${encodeURIComponent(name)}&score=${lastSeconds}&t=${Date.now()}`;
                 const response = await fetch(fullURL);
                 const data = await response.json();
                 
-                // 隱藏表單，顯示排行榜
                 document.getElementById('upload-form').classList.add('hidden');
                 document.getElementById('rank-display').classList.remove('hidden');
-                
-                // 顯示名次 (強化比對邏輯)
                 document.getElementById('user-rank').innerText = data.userRank || "?";
 
-                // 生成排行榜清單
                 const list = document.getElementById('leaderboard-list');
-                if (data.topList && data.topList.length > 0) {
-                    list.innerHTML = data.topList.map((e, idx) => `
-                        <div class="flex justify-between items-center py-2 border-b border-gray-100 ${e.name == name && parseInt(e.score) == lastSeconds ? 'bg-yellow-100 font-bold px-2 rounded-lg' : ''}">
-                            <span>${idx + 1}. ${e.name}</span>
-                            <span class="text-blue-600 font-black">${e.score}s</span>
-                        </div>
-                    `).join('');
-                } else {
-                    list.innerHTML = '<p class="text-center text-gray-400 py-4">暫無數據</p>';
-                }
+                list.innerHTML = (data.topList || []).map((e, idx) => `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100 ${e.name == name && parseInt(e.score) == lastSeconds ? 'bg-yellow-100 font-bold px-2 rounded-lg' : ''}">
+                        <span>${idx + 1}. ${e.name}</span>
+                        <span class="text-blue-600 font-black">${e.score}s</span>
+                    </div>
+                `).join('');
 
             } catch (e) {
                 console.error(e);
-                submitError.innerText = "連線超時或失敗，請再試一次";
+                submitError.innerText = "連線超時，請檢查網路後重試";
                 btn.disabled = false; btn.innerText = "重新送出";
             }
         };
@@ -349,15 +370,11 @@
             startView.classList.remove('hidden');
             endView.classList.add('hidden');
             nicknameInput.value = '';
-            initGame(); // 重置遊戲狀態
+            initGame();
         };
 
         // 預載圖片檢查
-        const imgCheck = new Image();
-        imgCheck.src = 'bg.jpg';
-        imgCheck.onload = () => console.log('背景圖載入成功');
-        imgCheck.onerror = () => console.warn('找不到 bg.jpg，請確認檔案是否存在於 GitHub 根目錄');
-
+        new Image().src = 'bg.jpg';
     </script>
 </body>
 </html>
