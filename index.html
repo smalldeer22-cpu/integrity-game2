@@ -41,14 +41,33 @@
         .card.flipped .card-inner { transform: rotateY(180deg); }
         .card-front, .card-back {
             position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: 10px;
+            backface-visibility: hidden; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            padding: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
-        .card-front { background-color: #3b82f6; color: white; border: 3px solid #fff; font-size: 2rem; }
+        
+        /* 卡片正面 (蓋起來時的圖案 - 使用您提供的圖片) */
+        .card-front { 
+            background-color: #f3f4f6;
+            /* 請將圖片命名為 bg.jpg 並放在同資料夾，或更換為網路網址 */
+            background-image: url('./bg.jpg'); 
+            background-size: cover;
+            background-position: center;
+            border: 3px solid #fff;
+        }
+        
+        /* 如果圖片載入失敗的替代樣式 */
+        .card-front::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
         .card-back {
             background-color: white; color: #1e3a8a; transform: rotateY(180deg);
-            border: 3px solid #3b82f6; font-size: 0.7rem; font-weight: 700;
+            border: 3px solid #3b82f6; font-size: 0.75rem; font-weight: 700;
             line-height: 1.4; text-align: center; overflow: hidden;
         }
         .matched .card-back { background-color: #dcfce7; border-color: #22c55e; color: #14532d; }
@@ -107,13 +126,15 @@
         </div>
     </div>
 
-    <!-- 蓋板彈窗 -->
+    <!-- 蓋板彈窗 (包含開始與結算) -->
     <div id="modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl overflow-y-auto max-h-[90vh]">
             
             <!-- 開始畫面 -->
             <div id="start-view">
-                <div class="text-6xl mb-6">⚖️</div>
+                <div class="w-32 h-44 mx-auto mb-6 rounded-lg shadow-md border-4 border-white overflow-hidden bg-gray-100">
+                    <img src="./bg.jpg" alt="卡牌封面" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150x200?text=Card+Back'">
+                </div>
                 <h2 class="text-2xl font-black text-blue-900 mb-2">誠信英雄大挑戰</h2>
                 <p class="text-gray-600 mb-8 font-bold text-sm leading-relaxed">
                     找出 4x3 陣列中完全相同的句子，<br>
@@ -146,7 +167,7 @@
                         全台總排名：第 <span id="user-rank">?</span> 名
                     </div>
                     <div id="leaderboard-list" class="text-left bg-gray-50 rounded-xl p-3 h-[250px] overflow-y-auto border border-gray-100 text-sm mb-6">
-                        <!-- 由 JS 捉取 GAS 資料生成 -->
+                        <!-- 排行清單 -->
                     </div>
                 </div>
 
@@ -158,10 +179,8 @@
     </div>
 
     <script>
-        // ==========================================
-        // 【重要】請將 Google Apps Script 部署後的網址填入下方引號內
-        // ==========================================
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxir00Bbm21dOvq8mXBls7Tgi_S4Xnkj7_vXhFtTItWtMqsyzac8qGlZfxvMNmRmQHy5Q/exec"; 
+        // 請確保此處網址是「最新部署」的網頁應用程式網址
+        const scriptURL = "https://script.google.com/macros/s/AKfycbyXz5QTd5K5EMPcZ5UDZfTIHTIe1WCr_ZT0eyWNOeyrvNVKQ8wt911bmIdlk368e7A/exec"; 
 
         const allSlogans = [
             "對公務員最好的禮物是稱讚，而不是送禮",
@@ -221,7 +240,7 @@
                 card.className = 'card';
                 card.innerHTML = `
                     <div class="card-inner" onclick="flipCard(this)" data-text="${text}">
-                        <div class="card-front">🛡️</div>
+                        <div class="card-front"></div>
                         <div class="card-back">${text}</div>
                     </div>
                 `;
@@ -273,60 +292,35 @@
             }, 600);
         }
 
-        // --- 排行榜連線邏輯 ---
         document.getElementById('submit-btn').onclick = async () => {
             const name = nicknameInput.value.trim();
             if (!name) { submitError.innerText = "請輸入暱稱"; return; }
             if (!scriptURL) { submitError.innerText = "尚未設定 GAS 後端網址"; return; }
 
             const btn = document.getElementById('submit-btn');
-            btn.disabled = true; btn.innerText = "連線資料庫中...";
+            btn.disabled = true; btn.innerText = "讀取中...";
             submitError.innerText = "";
 
             try {
-                // 1. 檢查暱稱是否重複 (GET)
-                const checkRes = await fetch(`${scriptURL}?score=0&t=${Date.now()}`);
-                const checkData = await checkRes.json();
-                const names = (checkData.allNames || []).map(n => n.toString().toLowerCase());
-                if (names.includes(name.toLowerCase())) {
-                    submitError.innerText = "此暱稱已被挑戰者使用，請換一個";
-                    btn.disabled = false; btn.innerText = "確認並上傳成績";
-                    return;
-                }
+                // 採用整合型連線
+                const fullURL = `${scriptURL}?name=${encodeURIComponent(name)}&score=${lastSeconds}&t=${Date.now()}`;
+                const response = await fetch(fullURL);
+                const data = await response.json();
+                
+                document.getElementById('upload-form').classList.add('hidden');
+                document.getElementById('rank-display').classList.remove('hidden');
+                document.getElementById('user-rank').innerText = data.userRank;
 
-                // 2. 上傳成績 (POST)
-                await fetch(scriptURL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: `name=${encodeURIComponent(name)}&score=${lastSeconds}`
-                });
-
-                // 3. 延遲一下捉取最新排行榜 (GET)
-                setTimeout(async () => {
-                    const finalRes = await fetch(`${scriptURL}?score=${lastSeconds}&t=${Date.now()}`);
-                    const data = await finalRes.json();
-                    
-                    document.getElementById('upload-form').classList.add('hidden');
-                    document.getElementById('rank-display').classList.remove('hidden');
-                    document.getElementById('user-rank').innerText = data.userRank;
-
-                    const list = document.getElementById('leaderboard-list');
-                    let displayRank = 1;
-                    list.innerHTML = data.topList.map((e, idx) => {
-                        // 秒數越小排名越前
-                        if (idx > 0 && e.score > data.topList[idx-1].score) displayRank = idx + 1;
-                        return `
-                            <div class="flex justify-between items-center py-2 border-b border-gray-100 ${e.name == name ? 'bg-yellow-100 font-bold px-2 rounded' : ''}">
-                                <span>${idx + 1}. ${e.name}</span>
-                                <span class="text-blue-600 font-black">${e.score}s</span>
-                            </div>
-                        `;
-                    }).join('');
-                }, 1000);
+                const list = document.getElementById('leaderboard-list');
+                list.innerHTML = (data.topList || []).map((e, idx) => `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100 ${e.name == name && e.score == lastSeconds ? 'bg-yellow-100 font-bold px-2 rounded' : ''}">
+                        <span>${idx + 1}. ${e.name}</span>
+                        <span class="text-blue-600 font-black">${e.score}s</span>
+                    </div>
+                `).join('');
 
             } catch (e) {
-                submitError.innerText = "連線失敗，請檢查網路";
+                submitError.innerText = "連線失敗，請重試";
                 btn.disabled = false; btn.innerText = "重新送出";
             }
         };
