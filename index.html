@@ -97,7 +97,7 @@
             color: #14532d; 
         }
 
-        /* 左側清單 */
+        /* 左側/下方清單 */
         .hint-item {
             border-left: 4px solid #3b82f6; background-color: #f8fafc;
             padding: 8px 12px; border-radius: 4px; margin-bottom: 6px;
@@ -113,7 +113,6 @@
 
     <!-- 頂部資訊欄 -->
     <div id="game-header" class="w-full max-w-2xl text-center mb-6">
-        <!-- 已移除圖示並修改標題文字 -->
         <h1 class="text-3xl font-black text-blue-900 mb-2 tracking-tighter">廉政卡牌翻翻樂</h1>
         <div class="flex justify-around items-center bg-white/80 backdrop-blur rounded-2xl py-3 shadow-sm border border-blue-100">
             <div class="text-center px-4">
@@ -140,7 +139,7 @@
         <!-- 9 點宣導清單 -->
         <div class="w-full lg:w-1/3 bg-white/95 rounded-2xl p-5 shadow-lg border border-blue-100 order-2 lg:order-1">
             <h3 class="font-black text-blue-800 text-lg border-b-2 border-blue-500 mb-4 pb-2 flex items-center gap-2">
-                <span>📖</span> 宣導要點參考
+                <span>📖</span> 宣導標語
             </h3>
             <div id="hint-list" class="space-y-2 text-xs text-gray-700 font-bold">
                 <!-- JS 動態生成 -->
@@ -148,17 +147,15 @@
         </div>
     </div>
 
-    <!-- 蓋板彈窗 (包含開始與結算) -->
+    <!-- 蓋板彈窗 -->
     <div id="modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl overflow-y-auto max-h-[90vh]">
             
             <!-- 開始畫面 -->
             <div id="start-view">
-                <!-- 放大封面圖 -->
                 <div class="w-60 h-84 mx-auto mb-6 rounded-xl shadow-2xl border-4 border-white overflow-hidden bg-gray-100 flex items-center justify-center">
                     <img id="preview-img" src="bg.jpg" alt="卡牌封面" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/200x280?text=山上區公所'">
                 </div>
-                <!-- 標題 -->
                 <h2 class="text-3xl font-black text-blue-900 mb-8 tracking-tight">廉政卡牌翻翻樂</h2>
                 
                 <button id="start-btn" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-xl">
